@@ -58,7 +58,7 @@ class DiscordContentObject {
      * array of up to 10 embed objects
      * @var array
      */
-    protected $embedded;
+    protected $embedded = [];
 
     /**
      * @param string $field_name
@@ -272,7 +272,8 @@ class DiscordContentObject {
      */
     public function addEmbeddedField($name, $value, $inline=true){
         $fields_limit = 25;
-        if(count($this->embedded['fields']) < $fields_limit){
+        $embedded_fields = isset($this->embedded['fields']) ? $this->embedded['fields'] : [];
+        if(count($embedded_fields) < $fields_limit){
             $embedded_fields[] = [
                 'name'=>substr($name, 0, 256),
                 'value'=>substr($value, 0, 1024),
