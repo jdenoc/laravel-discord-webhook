@@ -10,7 +10,6 @@ namespace Eklundkristoffer\DiscordWebhook;
  *
  * @link https://discordapp.com/developers/docs/resources/webhook#execute-webhook-jsonform-params
  * @link https://discordapp.com/developers/docs/resources/channel#embed-object
- * @link https://discordapp.com/developers/docs/resources/channel#embed-limits
  */
 class DiscordContentObject {
 
@@ -41,6 +40,20 @@ class DiscordContentObject {
     const COLOR_DARK_NAVY = 2899536;
 
     /**
+     * Discord webhook payload Limits
+     * @link https://discordapp.com/developers/docs/resources/channel#embed-limits
+     */
+    const LIMIT_CONTENT = 2000;
+    const LIMIT_EMBEDDED = 10;
+    const LIMIT_EMBEDDED_TITLE = 256;
+    const LIMIT_EMBEDDED_DESCRIPTION = 2048;
+    const LIMIT_EMBEDDED_FIELD = 25;
+    const LIMIT_EMBEDDED_FIELD_NAME = 256;
+    const LIMIT_EMBEDDED_FIELD_VALUE = 1024;
+    const LIMIT_EMBEDDED_FOOTER_TEXT = 2048;
+    const LIMIT_EMBEDDED_AUTHOR_NAME = 256;
+
+    /**
      * the message contents (up to 2000 characters)
      * @var string
      */
@@ -50,7 +63,7 @@ class DiscordContentObject {
      * @param $text - message contents (up to 2000 characters)
      */
     public function addContent($text){
-        $this->content = substr($text, 0, 2000);
+        $this->content = substr($text, 0, self::LIMIT_CONTENT);
     }
 
     /**
@@ -67,17 +80,16 @@ class DiscordContentObject {
      * @throws \OverflowException
      */
     protected function addToEmbedded($field_name, $value){
-        $embedded_limit = 10;
         if($field_name == 'timestamp'){
-            $used_embedded_limit = $embedded_limit;
+            $used_embedded_limit = self::LIMIT_EMBEDDED;
         } else {
             // the 10th value is reserved for timestamp
-            $used_embedded_limit = $embedded_limit-1;
+            $used_embedded_limit = self::LIMIT_EMBEDDED-1;
         }
         if(count($this->embedded) < $used_embedded_limit){
             $this->embedded[$field_name] = $value;
         } else {
-            throw new \OverflowException(sprintf("Embedded limit reached. Limit: %d.", $embedded_limit));
+            throw new \OverflowException(sprintf("Embedded limit reached. Limit: %d.", self::LIMIT_EMBEDDED));
         }
     }
 
@@ -86,7 +98,7 @@ class DiscordContentObject {
      * @param string $title
      */
     public function addEmbeddedTitle($title){
-        $this->addToEmbedded('title', substr($title, 0, 256));
+        $this->addToEmbedded('title', substr($title, 0, self::LIMIT_EMBEDDED_TITLE));
     }
 
     /**
@@ -94,7 +106,7 @@ class DiscordContentObject {
      * @param string $description
      */
     public function addEmbeddedDescription($description){
-        $this->addToEmbedded('description', substr($description, 0, 2048));
+        $this->addToEmbedded('description', substr($description, 0, self::LIMIT_EMBEDDED_DESCRIPTION));
     }
 
     /**
@@ -130,7 +142,7 @@ class DiscordContentObject {
      * @param string $proxy_icon_url - a proxied url of footer icon
      */
     public function addEmbeddedFooter($text, $icon_url="", $proxy_icon_url=""){
-        $footer = ['text'=>substr($text, 0, 2048)];
+        $footer = ['text'=>substr($text, 0, self::LIMIT_EMBEDDED_FOOTER_TEXT)];
         if(!empty($icon_url)){
             $footer = ['icon_url'=>$icon_url];
         }
@@ -225,8 +237,8 @@ class DiscordContentObject {
      */
     public function addEmbeddedProvider($name='', $url=''){
         $provider = [];
-        if(!empty($url)){
-            $provider['name'] = $url;
+        if(!empty($name)){
+            $provider['name'] = $name;
         }
         if(!empty($url)){
             $provider['url'] = $url;
@@ -246,7 +258,7 @@ class DiscordContentObject {
     public function addEmbeddedAuthor($name='', $url='', $icon_url='', $proxy_icon_url=''){
         $author = [];
         if(!empty($name)){
-            $author['name'] = substr($name, 0, 256);
+            $author['name'] = substr($name, 0, self::LIMIT_EMBEDDED_AUTHOR_NAME);
         }
         if(!empty($url)){
             $author['url'] = $url;
@@ -271,17 +283,16 @@ class DiscordContentObject {
      * @throws \OverflowException
      */
     public function addEmbeddedField($name, $value, $inline=true){
-        $fields_limit = 25;
         $embedded_fields = isset($this->embedded['fields']) ? $this->embedded['fields'] : [];
-        if(count($embedded_fields) < $fields_limit){
+        if(count($embedded_fields) < self::LIMIT_EMBEDDED_FIELD){
             $embedded_fields[] = [
-                'name'=>substr($name, 0, 256),
-                'value'=>substr($value, 0, 1024),
+                'name'=>substr($name, 0, self::LIMIT_EMBEDDED_FIELD_NAME),
+                'value'=>substr($value, 0, self::LIMIT_EMBEDDED_FIELD_VALUE),
                 'inline'=>$inline
             ];
             $this->addToEmbedded('fields', $embedded_fields);
         } else {
-            throw new \OverflowException(sprintf("Embedded field limit reached. Limit: %d", $fields_limit));
+            throw new \OverflowException(sprintf("Embedded field limit reached. Limit: %d", self::LIMIT_EMBEDDED_FIELD));
         }
     }
 
@@ -291,8 +302,8 @@ class DiscordContentObject {
             $data['content'] = $this->content;
         }
         if(!empty($this->embedded)){
-            $embeded = $this->embedded;
-            $embeded['timestamp'] = date('c');
+            $this->addEmbeddedTimestamp(date('c'));
+            $data['embeds'][] = $this->embedded;
         }
         return $data;
     }
